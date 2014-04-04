@@ -16,9 +16,12 @@
       <div class="header row">
         <div class="col-md-12 text-center">
           <a ng-href="#/"><h1>News</h1></a>
-          <a ng-href="#/login" ng-hide="user.user">Login</a>
-          <a ng-href="#/register" ng-hide="user.user">Register</a>
-          <a ng-href="#/logout" ng-show="user.user">Logout</a>
+          <a ng-href="#/login" ng-hide="user.currentUser()">Login</a>
+          <a ng-href="#/register" ng-hide="user.currentUser()">Register</a>
+          <div ng-show="user.currentUser()">
+            Welcome, {{user.currentUser().name}}
+          </div>
+          <a ng-href="#/logout" ng-show="user.currentUser()">Logout</a>
           <hr>
           <a class="btn btn-default" ng-href="#/submit">Submit News</a>
         </div>

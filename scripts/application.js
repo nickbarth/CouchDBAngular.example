@@ -63,9 +63,17 @@ var LegoNews = function ($http) {
 }
 
 var User = function ($http) {
+  var currentUser = null;
+
   return {
     connect: function () {
       return $http.get('http://0.0.0.0:5984/_session', { withCredentials: true });
+    },
+    set: function (user) {
+      currentUser = user;
+    },
+    get: function () {
+      return currentUser;
     },
     login: function (username, password) {
       return $http.post('http://0.0.0.0:5984/_session', { name: username, password: password }, { withCredentials: true });
@@ -90,19 +98,20 @@ var User = function ($http) {
 var UserCtrl = function (User) {
   var self = this;
   //this.user = localStorage.getItem('user') || false;
-  this.user = false;
+  this.User = User;
+  User.set(false);
 
-  if (!this.user) {
-    User.connect().success(function (data) {
-      if (data.userCtx.name) {
-        self.user = data.userCtx;
-        console.log('success');
-        //localStorage.setItem('user', self.user);
-      }
-    })
-  }
+  User.connect().success(function (data) {
+    if (data.userCtx.name) {
+      User.set(data.userCtx);
+      console.log('success');
+      //localStorage.setItem('user', self.user);
+    }
+  })
+}
 
-  console.log(this.user.name);
+UserCtrl.prototype.currentUser = function () {
+  return this.User.get();
 }
 
 var NewsCtrl = function (LegoNews, $routeParams) {
@@ -149,9 +158,12 @@ var LoginCtrl = function (User, $location) {
 }
 
 LoginCtrl.prototype.submit = function (username, password) {
+  var self = this;
+
   this.User.login(username, password)
-  .success(function (data, status, headers, config) {
-    this.$location.path('/');
+  .success(function (data) {
+    self.User.set(data);
+    self.$location.path('/');
   }.bind(this))
   .error(function (err) {
     alert(err.error.toUpperCase() + ': ' + err.reason);
@@ -160,6 +172,7 @@ LoginCtrl.prototype.submit = function (username, password) {
 
 var LogoutCtrl = function (User, $location) {
   User.logout().success(function () {
+    User.set(false);
     $location.path('/');
   })
 }
@@ -177,6 +190,7 @@ RegisterCtrl.prototype.submit = function (username, password) {
   this.User.register(username, password)
   .success(function () {
     self.User.login(username, password).success(function (data) {
+      self.User.set(data);
       self.$location.path('/');
     })
   })
