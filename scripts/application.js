@@ -57,7 +57,7 @@ var LegoNews = function ($http) {
         genre: genre,
         photos: photos,
         description: description
-      })
+      }, { withCredentials: true })
     }
   }
 }
@@ -247,7 +247,7 @@ SubmitCtrl.prototype.submit = function () {
   .success(function (data) {
     self.$location.path('/photo/' + data.id);
   })
-  .error(function (data) {
+  .error(function (err) {
     alert(err.error.toUpperCase() + ': ' + err.reason);
   })
 }
