@@ -35,6 +35,11 @@ var Routes = function ($routeProvider) {
     controller: 'RegisterCtrl',
     controllerAs: 'register'
   }).
+  when('/account',{
+    templateUrl: 'account.html',
+    controller: 'AccountCtrl',
+    controllerAs: 'account'
+  }).
   otherwise({
     redirectTo: '/'
   })
@@ -63,14 +68,19 @@ var LegoNews = function ($http) {
 }
 
 var User = function ($http) {
-  var currentUser = null;
+  var currentUser = null,
+      callback = null;
 
   return {
     connect: function () {
       return $http.get('http://0.0.0.0:5984/_session', { withCredentials: true });
     },
+    onChange: function (func) {
+      callback = func;
+    },
     set: function (user) {
       currentUser = user;
+      typeof(callback) === 'function' && callback();
     },
     get: function () {
       return currentUser;
@@ -80,6 +90,9 @@ var User = function ($http) {
     },
     logout: function () {
       return $http.delete('http://0.0.0.0:5984/_session', { withCredentials: true });
+    },
+    update: function (username) {
+      return $http.delete('http://0.0.0.0:5984/_users/org.couchdb.user:' + username, { withCredentials: true });
     },
     register: function (username, password) {
       return $http.put('http://0.0.0.0:5984/_users/org.couchdb.user:' + username, {
@@ -104,7 +117,7 @@ var UserCtrl = function (User) {
   User.connect().success(function (data) {
     if (data.userCtx.name) {
       User.set(data.userCtx);
-      console.log('success');
+      console.log(User.get().name);
       //localStorage.setItem('user', self.user);
     }
   })
@@ -252,6 +265,38 @@ SubmitCtrl.prototype.submit = function () {
   })
 }
 
+var AccountCtrl = function (User, $location) {
+  console.log('test');
+  this.email = User.get().name;
+  this.password = '';
+  this.User = User;
+  this.$location = $location;
+
+  User.onChange(this.updateEmail.bind(this));
+}
+
+AccountCtrl.prototype.updateEmail = function () {
+  this.email = this.User.get().name;
+}
+
+AccountCtrl.prototype.submit = function (username, password) {
+  var self = this;
+
+  this.User.update(username)
+  .success(function () {
+    this.User.register(username, password)
+    .success(function () {
+      self.User.login(username, password).success(function (data) {
+        self.User.set(data);
+        self.$location.path('/');
+      })
+    })
+    .error(function (err) {
+      alert(err.error.toUpperCase() + ': ' + err.reason);
+    })
+  })
+}
+
 // Directives
 
 var FileChange = function() {
@@ -271,11 +316,13 @@ angular.module('App', ['ngRoute', 'ngResource', 'firebase'])
   .directive('fileChange', FileChange)
   .factory('User', ['$http', User])
   .factory('LegoNews', ['$http', LegoNews])
+  .controller('UserCtrl', ['User', UserCtrl])
   .controller('NewsCtrl', ['LegoNews', '$routeParams', NewsCtrl])
   .controller('PhotoCtrl', ['LegoNews', '$routeParams', PhotoCtrl])
   .controller('SubmitCtrl', ['User', '$location', 'LegoNews', SubmitCtrl])
   .controller('LoginCtrl', ['User', '$location', LoginCtrl])
   .controller('LogoutCtrl', ['User', '$location', LogoutCtrl])
+  .controller('AccountCtrl', ['User', '$location', AccountCtrl])
   .controller('RegisterCtrl', ['User', '$location', RegisterCtrl]);
 
 angular.element(document).ready(function () {
