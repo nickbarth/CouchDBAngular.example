@@ -55,6 +55,9 @@ var LegoNews = function ($http) {
     get: function (id) {
       return $http.get('http://0.0.0.0:5984/lego-news/' + id)
     },
+    delete: function (id, rev) {
+      return $http.delete('http://0.0.0.0:5984/lego-news/' + id + '?rev=' + rev, { withCredentials: true })
+    },
     put: function (title, genre, photos, description) {
       return $http.post('http://0.0.0.0:5984/lego-news', {
         title: title,
@@ -75,6 +78,9 @@ var User = function ($http) {
     connect: function () {
       return $http.get('http://0.0.0.0:5984/_session', { withCredentials: true });
     },
+    load: function (username) {
+      return $http.get('http://0.0.0.0:5984/_users/org.couchdb.user:' + username, { withCredentials: true });
+    },
     onChange: function (func) {
       callback = func;
     },
@@ -91,8 +97,8 @@ var User = function ($http) {
     logout: function () {
       return $http.delete('http://0.0.0.0:5984/_session', { withCredentials: true });
     },
-    update: function (username) {
-      return $http.delete('http://0.0.0.0:5984/_users/org.couchdb.user:' + username, { withCredentials: true });
+    update: function (user) {
+      return $http.put('http://0.0.0.0:5984/_users/' + user._id, user);
     },
     register: function (username, password) {
       return $http.put('http://0.0.0.0:5984/_users/org.couchdb.user:' + username, {
@@ -116,9 +122,11 @@ var UserCtrl = function (User) {
 
   User.connect().success(function (data) {
     if (data.userCtx.name) {
-      User.set(data.userCtx);
-      console.log(User.get().name);
-      //localStorage.setItem('user', self.user);
+      User.load(data.userCtx.name).success(function (data) {
+        User.set(data);
+        console.log(data);
+        //localStorage.setItem('user', self.user);
+      })
     }
   })
 }
@@ -149,9 +157,11 @@ var NewsCtrl = function (LegoNews, $routeParams) {
   }.bind(this));
 }
 
-var PhotoCtrl = function (LegoNews, $routeParams) {
-  console.log($routeParams.itemId);
+var PhotoCtrl = function (LegoNews, $routeParams, $location) {
   var that = this;
+
+  this.LegoNews = LegoNews;
+  this.$location = $location;
 
   LegoNews.get($routeParams.itemId)
   .success(function (data) {
@@ -160,6 +170,14 @@ var PhotoCtrl = function (LegoNews, $routeParams) {
   })
   .error(function (data) {
     alert(data);
+  })
+}
+
+PhotoCtrl.prototype.delete = function (id, rev) {
+  var self = this;
+
+  this.LegoNews.delete(id, rev).success(function () {
+    self.$location.path('/');
   })
 }
 
@@ -174,9 +192,12 @@ LoginCtrl.prototype.submit = function (username, password) {
   var self = this;
 
   this.User.login(username, password)
-  .success(function (data) {
-    self.User.set(data);
-    self.$location.path('/');
+  .success(function () {
+    self.User.load(username).success(function (data) {
+      console.log(data)
+      self.User.set(data);
+      self.$location.path('/');
+    })
   }.bind(this))
   .error(function (err) {
     alert(err.error.toUpperCase() + ': ' + err.reason);
@@ -202,9 +223,12 @@ RegisterCtrl.prototype.submit = function (username, password) {
 
   this.User.register(username, password)
   .success(function () {
-    self.User.login(username, password).success(function (data) {
-      self.User.set(data);
-      self.$location.path('/');
+    self.User.login(username, password).success(function () {
+      self.User.load(username).success(function (data) {
+        console.log(data);
+        self.User.set(data);
+        self.$location.path('/');
+      })
     })
   })
   .error(function (err) {
@@ -282,19 +306,30 @@ AccountCtrl.prototype.updateEmail = function () {
 AccountCtrl.prototype.submit = function (username, password) {
   var self = this;
 
-  this.User.update(username)
+  var user = this.User.get();
+  user.password = password;
+
+  this.User.update(user)
   .success(function () {
-    this.User.register(username, password)
-    .success(function () {
-      self.User.login(username, password).success(function (data) {
-        self.User.set(data);
-        self.$location.path('/');
-      })
-    })
-    .error(function (err) {
-      alert(err.error.toUpperCase() + ': ' + err.reason);
-    })
+    console.log('done');
   })
+  .error(function (err) {
+    alert(err.error.toUpperCase() + ': ' + err.reason);
+  })
+
+  //this.User.update(username)
+  //.success(function () {
+  //  this.User.register(username, password)
+  //  .success(function () {
+  //    self.User.login(username, password).success(function (data) {
+  //      self.User.set(data);
+  //      self.$location.path('/');
+  //    })
+  //  })
+  //  .error(function (err) {
+  //    alert(err.error.toUpperCase() + ': ' + err.reason);
+  //  })
+  //})
 }
 
 // Directives
@@ -318,7 +353,7 @@ angular.module('App', ['ngRoute', 'ngResource', 'firebase'])
   .factory('LegoNews', ['$http', LegoNews])
   .controller('UserCtrl', ['User', UserCtrl])
   .controller('NewsCtrl', ['LegoNews', '$routeParams', NewsCtrl])
-  .controller('PhotoCtrl', ['LegoNews', '$routeParams', PhotoCtrl])
+  .controller('PhotoCtrl', ['LegoNews', '$routeParams', '$location', PhotoCtrl])
   .controller('SubmitCtrl', ['User', '$location', 'LegoNews', SubmitCtrl])
   .controller('LoginCtrl', ['User', '$location', LoginCtrl])
   .controller('LogoutCtrl', ['User', '$location', LogoutCtrl])

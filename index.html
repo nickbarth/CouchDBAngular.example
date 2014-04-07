@@ -50,6 +50,7 @@
     <script type="text/ng-template" id="photo.html">
       <div class="col-md-12">
         <h2>{{ photo.item.title }}</h2>
+        <button class="btn btn-default" ng-click="photo.delete(photo.item._id, photo.item._rev)">Delete Photo</button>
         <p>{{ photo.item.description }}</p>
         <img ng-repeat="photo in photo.item.photos" ng-src="{{ photo }}" class="full-thumb">
       </div>
