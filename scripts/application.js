@@ -59,12 +59,21 @@ var LegoNews = function ($http) {
       return $http.delete('http://0.0.0.0:5984/lego-news/' + id + '?rev=' + rev, { withCredentials: true })
     },
     put: function (title, genre, photos, description) {
+      var photoData = {};
+
+      photos.forEach(function (photo, index) {
+        photoData['photo' + index + '.png'] = {
+          content_type: 'image/png',
+          data: photo.replace('data:image/png;base64,', '')
+        }
+      });
+
       return $http.post('http://0.0.0.0:5984/lego-news', {
         title: title,
         type: 'Photo',
         genre: genre,
-        photos: photos,
-        description: description
+        description: description,
+        _attachments: photoData
       }, { withCredentials: true })
     }
   }
@@ -152,6 +161,10 @@ var NewsCtrl = function (LegoNews, $routeParams) {
     this.nextPage = this.total_pages.length < this.nextPage ? this.total_pages.length : this.nextPage;
 
     this.items = data.rows.map(function (data) {
+      if (data.value._attachments) data.value.photos = Object.keys(data.value._attachments).map(function (attachment) {
+        return '//localhost:5984/lego-news/' + data.value._id + '/' + attachment
+      })
+
       return data.value;
     });
   }.bind(this));
@@ -165,6 +178,9 @@ var PhotoCtrl = function (LegoNews, $routeParams, $location) {
 
   LegoNews.get($routeParams.itemId)
   .success(function (data) {
+    if (data._attachments) data.photos = Object.keys(data._attachments).map(function (attachment) {
+      return '//localhost:5984/lego-news/' + data._id + '/' + attachment
+    });
     console.log(data);
     that.item = data;
   })
@@ -238,7 +254,7 @@ RegisterCtrl.prototype.submit = function (username, password) {
 
 var SubmitCtrl = function (User, $location, LegoNews) {
   this.title = '';
-  this.photos = [1,2,2];
+  this.photos = [];
   this.genre = 'Science Fiction';
   this.description = '';
   this.User = User;
