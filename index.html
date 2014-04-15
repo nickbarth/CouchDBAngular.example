@@ -50,6 +50,7 @@
     <script type="text/ng-template" id="photo.html">
       <div class="col-md-12">
         <h2>{{ photo.item.title }}</h2>
+        <a class="btn btn-default" ng-href="#/edit/{{photo.item._id}}">Edit</a>
         <button class="btn btn-default" ng-click="photo.delete(photo.item._id, photo.item._rev)">Delete Photo</button>
         <p>{{ photo.item.description }}</p>
         <img ng-repeat="photo in photo.item.photos" ng-src="{{ photo }}" class="full-thumb">
@@ -57,11 +58,11 @@
     </script>
     <script type="text/ng-template" id="login.html">
       <div class="col-md-12">
-        <form class="form-horizontal" role="form">
+        <form class="form-horizontal" role="form" ng-submit="login.submit()">
           <div class="form-group">
             <label for="inputEmail" class="col-sm-2 control-label">Email</label>
             <div class="col-sm-10">
-              <input type="email" class="form-control" id="inputEmail" placeholder="Email" ng-model="login.email">
+              <input type="email" class="form-control" id="inputEmail" placeholder="Email" ng-model="login.username">
             </div>
           </div>
           <div class="form-group">
@@ -72,7 +73,7 @@
           </div>
           <div class="form-group">
             <div class="col-sm-offset-2 col-sm-10">
-              <button type="submit" class="btn btn-default" ng-click="login.submit(login.email, login.password)">Sign In</button>
+              <button type="submit" class="btn btn-default">Sign In</button>
             </div>
           </div>
         </form>
@@ -161,6 +162,48 @@
           <div class="form-group">
             <div class="col-sm-offset-2 col-sm-10">
               <button type="submit" class="btn btn-default" ng-click="submit.submit()">Submit</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </script>
+    <script type="text/ng-template" id="edit.html">
+      <div class="col-md-12">
+        <form class="form-horizontal" role="form">
+          <div class="form-group">
+            <label for="inputTitle" class="col-sm-2 control-label">Title</label>
+            <div class="col-sm-10">
+              <input type="text" class="form-control" id="inputTitle" placeholder="Title" ng-model="edit.item.title">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="inputTitle" class="col-sm-2 control-label">Photos</label>
+            <div class="col-sm-10">
+              <input type="file" class="form-control" id="inputPhotos" placeholder="Photos" multiple file-change="edit.photoPreview">
+              <canvas id="canvas" height="110" class="hide"></canvas>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="inputTitle" class="col-sm-2 control-label">Genre</label>
+            <div class="col-sm-10">
+              <select class="form-control" id="inputGenre" placeholder="Genre" ng-model="edit.item.genre">
+                <option ng-selected="selected">Science Fiction</option>
+                <option>Fantasy</option>
+                <option>War</option>
+                <option>Comic Book</option>
+                <option>Historical</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="inputDescription" class="col-sm-2 control-label">Description</label>
+            <div class="col-sm-10">
+              <textarea class="form-control" id="inputDescription" placeholder="Description (Optional)" ng-model="edit.item.description" rows="5"></textarea>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="col-sm-offset-2 col-sm-10">
+              <button type="submit" class="btn btn-default" ng-click="edit.submit()">Submit</button>
             </div>
           </div>
         </form>

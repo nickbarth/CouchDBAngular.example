@@ -11,6 +11,11 @@ var Routes = function ($routeProvider) {
     controller: 'SubmitCtrl',
     controllerAs: 'submit'
   }).
+  when('/edit/:itemId',{
+    templateUrl: 'edit.html',
+    controller: 'EditCtrl',
+    controllerAs: 'edit'
+  }).
   when('/page/:pageId',{
     templateUrl: 'news.html',
     controller: 'NewsCtrl',
@@ -50,7 +55,7 @@ var Routes = function ($routeProvider) {
 var LegoNews = function ($http) {
   return {
     view: function (limit, offset) {
-      return $http.get('http://0.0.0.0:5984/lego-news/_design/news/_view/all_news?limit=' + limit + '&skip=' + offset)
+      return $http.get('http://0.0.0.0:5984/lego-news/_design/news/_view/all_news?include_docs=true&limit=' + limit + '&skip=' + offset)
     },
     get: function (id) {
       return $http.get('http://0.0.0.0:5984/lego-news/' + id)
@@ -107,7 +112,7 @@ var User = function ($http) {
       return $http.delete('http://0.0.0.0:5984/_session', { withCredentials: true });
     },
     update: function (user) {
-      return $http.put('http://0.0.0.0:5984/_users/' + user._id, user);
+      return $http.put('http://0.0.0.0:5984/_users/' + user._id, user, { withCredentials: true });
     },
     register: function (username, password) {
       return $http.put('http://0.0.0.0:5984/_users/org.couchdb.user:' + username, {
@@ -124,18 +129,25 @@ var User = function ($http) {
 // Controllers
 
 var UserCtrl = function (User) {
-  var self = this;
-  //this.user = localStorage.getItem('user') || false;
-  this.User = User;
-  User.set(false);
+  var self = this,
+      user = localStorage.getItem('user') || false;
 
-  User.connect().success(function (data) {
-    if (data.userCtx.name) {
-      User.load(data.userCtx.name).success(function (data) {
-        User.set(data);
-        console.log(data);
-        //localStorage.setItem('user', self.user);
-      })
+  this.User = User;
+
+  if (user) {
+    return User.set(JSON.parse(user));
+  }
+
+  User.connect()
+  .then(function (session) {
+    if (session.data.userCtx.name) {
+      return User.load(session.data.userCtx.name);
+    }
+  })
+  .then(function (user) {
+    if (user) {
+      User.set(user.data);
+      localStorage.setItem('user', JSON.stringify(user.data));
     }
   })
 }
@@ -161,11 +173,13 @@ var NewsCtrl = function (LegoNews, $routeParams) {
     this.nextPage = this.total_pages.length < this.nextPage ? this.total_pages.length : this.nextPage;
 
     this.items = data.rows.map(function (data) {
-      if (data.value._attachments) data.value.photos = Object.keys(data.value._attachments).map(function (attachment) {
+      var item = data.doc;
+
+      if (item._attachments) item.photos = Object.keys(item._attachments).map(function (attachment) {
         return '//localhost:5984/lego-news/' + data.value._id + '/' + attachment
       })
 
-      return data.value;
+      return item;
     });
   }.bind(this));
 }
@@ -198,31 +212,32 @@ PhotoCtrl.prototype.delete = function (id, rev) {
 }
 
 var LoginCtrl = function (User, $location) {
-  this.email = 'nick@nick.so';
+  this.username = 'nick@nick.so';
   this.password = 'nick';
   this.User = User;
   this.$location = $location;
 }
 
-LoginCtrl.prototype.submit = function (username, password) {
+LoginCtrl.prototype.submit = function () {
   var self = this;
 
-  this.User.login(username, password)
-  .success(function () {
-    self.User.load(username).success(function (data) {
-      console.log(data)
-      self.User.set(data);
-      self.$location.path('/');
-    })
-  }.bind(this))
-  .error(function (err) {
+  this.User.login(this.username, this.password)
+  .then(self.User.load.bind(null, this.username))
+  .then(function (user) {
+    self.User.set(user.data);
+    self.$location.path('/');
+  })
+  .catch(function (err) {
+    err = err.data;
     alert(err.error.toUpperCase() + ': ' + err.reason);
   })
 }
 
 var LogoutCtrl = function (User, $location) {
-  User.logout().success(function () {
+  User.logout()
+  .then(function () {
     User.set(false);
+    localStorage.setItem('user', '');
     $location.path('/');
   })
 }
@@ -305,8 +320,70 @@ SubmitCtrl.prototype.submit = function () {
   })
 }
 
+var EditCtrl = function (User, $location, $routeParams, LegoNews) {
+  var self = this;
+
+  this.User = User;
+  this.$location = $location;
+  this.LegoNews = LegoNews;
+
+  LegoNews.get($routeParams.itemId)
+  .success(function (data) {
+    if (data._attachments) data.photos = Object.keys(data._attachments).map(function (attachment) {
+      return '//localhost:5984/lego-news/' + data._id + '/' + attachment
+    });
+    console.log(data);
+    self.item = data;
+  })
+  .error(function (data) {
+    alert(data);
+  })
+}
+
+EditCtrl.prototype.photoPreview = function (event) {
+  var canvas = document.getElementById('canvas'),
+      context = canvas.getContext('2d'),
+      files = event.target.files,
+      n = 0,
+      that = this;
+
+  canvas.classList.remove('hide');
+  canvas.width = files.length * 120;
+  this.photos = [];
+
+  function previewImage (x, y) {
+    return function (event) {
+      var image = new Image();
+
+      image.onload = function () {
+        context.drawImage(image, x, y, 100, 100);
+      }
+
+      image.src = event.target.result;
+      that.photos.push(image.src);
+    }
+  }
+
+  for (n = 0; n < files.length; n++) {
+    var reader = new FileReader();
+    reader.onload = previewImage((100 * n) + (10 * n), 10);
+    reader.readAsDataURL(files[n]);
+  }
+}
+
+EditCtrl.prototype.edit = function () {
+  var self = this;
+
+  this.LegoNews.put(this.title, this.genre, this.photos, this.description)
+  .success(function (data) {
+    self.$location.path('/photo/' + data.id);
+  })
+  .error(function (err) {
+    alert(err.error.toUpperCase() + ': ' + err.reason);
+  })
+}
+
 var AccountCtrl = function (User, $location) {
-  console.log('test');
   this.email = User.get().name;
   this.password = '';
   this.User = User;
@@ -332,20 +409,6 @@ AccountCtrl.prototype.submit = function (username, password) {
   .error(function (err) {
     alert(err.error.toUpperCase() + ': ' + err.reason);
   })
-
-  //this.User.update(username)
-  //.success(function () {
-  //  this.User.register(username, password)
-  //  .success(function () {
-  //    self.User.login(username, password).success(function (data) {
-  //      self.User.set(data);
-  //      self.$location.path('/');
-  //    })
-  //  })
-  //  .error(function (err) {
-  //    alert(err.error.toUpperCase() + ': ' + err.reason);
-  //  })
-  //})
 }
 
 // Directives
@@ -371,6 +434,7 @@ angular.module('App', ['ngRoute', 'ngResource', 'firebase'])
   .controller('NewsCtrl', ['LegoNews', '$routeParams', NewsCtrl])
   .controller('PhotoCtrl', ['LegoNews', '$routeParams', '$location', PhotoCtrl])
   .controller('SubmitCtrl', ['User', '$location', 'LegoNews', SubmitCtrl])
+  .controller('EditCtrl', ['User', '$location', '$routeParams', 'LegoNews', EditCtrl])
   .controller('LoginCtrl', ['User', '$location', LoginCtrl])
   .controller('LogoutCtrl', ['User', '$location', LogoutCtrl])
   .controller('AccountCtrl', ['User', '$location', AccountCtrl])
