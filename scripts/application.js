@@ -1,53 +1,54 @@
 // Routes
 
 var Routes = function ($routeProvider) {
-  $routeProvider.when('/',{
-    templateUrl: 'news.html',
-    controller: 'NewsCtrl',
-    controllerAs: 'news'
-  }).
-  when('/submit',{
-    templateUrl: 'submit.html',
-    controller: 'SubmitCtrl',
-    controllerAs: 'submit'
-  }).
-  when('/edit/:itemId',{
-    templateUrl: 'edit.html',
-    controller: 'EditCtrl',
-    controllerAs: 'edit'
-  }).
-  when('/page/:pageId',{
-    templateUrl: 'news.html',
-    controller: 'NewsCtrl',
-    controllerAs: 'news'
-  }).
-  when('/photo/:itemId',{
-    templateUrl: 'photo.html',
-    controller: 'PhotoCtrl',
-    controllerAs: 'photo'
-  }).
-  when('/login',{
-    templateUrl: 'login.html',
-    controller: 'LoginCtrl',
-    controllerAs: 'login'
-  }).
-  when('/logout',{
-    template: '',
-    controller: 'LogoutCtrl'
-  }).
-  when('/register',{
-    templateUrl: 'register.html',
-    controller: 'RegisterCtrl',
-    controllerAs: 'register'
-  }).
-  when('/account',{
-    templateUrl: 'account.html',
-    controller: 'AccountCtrl',
-    controllerAs: 'account'
-  }).
-  otherwise({
-    redirectTo: '/'
-  })
+  $routeProvider
+    .when('/',{
+      templateUrl: 'news.html',
+      controller: 'NewsCtrl',
+      controllerAs: 'news'
+    }).
+    when('/submit',{
+      templateUrl: 'submit.html',
+      controller: 'SubmitCtrl',
+      controllerAs: 'submit'
+    }).
+    when('/edit/:itemId',{
+      templateUrl: 'edit.html',
+      controller: 'EditCtrl',
+      controllerAs: 'edit'
+    }).
+    when('/page/:pageId',{
+      templateUrl: 'news.html',
+      controller: 'NewsCtrl',
+      controllerAs: 'news'
+    }).
+    when('/photo/:itemId',{
+      templateUrl: 'photo.html',
+      controller: 'PhotoCtrl',
+      controllerAs: 'photo'
+    }).
+    when('/login',{
+      templateUrl: 'login.html',
+      controller: 'LoginCtrl',
+      controllerAs: 'login'
+    }).
+    when('/logout',{
+      template: '',
+      controller: 'LogoutCtrl'
+    }).
+    when('/register',{
+      templateUrl: 'register.html',
+      controller: 'RegisterCtrl',
+      controllerAs: 'register'
+    }).
+    when('/account',{
+      templateUrl: 'account.html',
+      controller: 'AccountCtrl',
+      controllerAs: 'account'
+    }).
+    otherwise({
+      redirectTo: '/'
+    })
 }
 
 // Factories
@@ -156,21 +157,40 @@ UserCtrl.prototype.currentUser = function () {
   return this.User.get();
 }
 
+var Pagination = function (currentPage, itemsPerPage, totalItems) {
+  this.currentPage = parseInt(currentPage, 10) || 1;
+  this.itemsPerPage = itemsPerPage;
+  this.totalItems = totalItems;
+}
+
+Pagination.prototype.offset = function () {
+  return (this.currentPage - 1) * this.itemsPerPage || 0;
+}
+
+Pagination.prototype.totalPages = function () {
+  return Math.ceil(this.totalItems / this.itemsPerPage);
+}
+
+Pagination.prototype.prevPage = function () {
+  return this.currentPage - 1 || 1;
+}
+
+Pagination.prototype.nextPage = function () {
+  return this.totalPages() === this.currentPage ? this.currentPage : this.currentPage + 1;
+}
+
 var NewsCtrl = function (LegoNews, $routeParams) {
+  var self = this;
+
   this.name = 'test';
-  this.total_pages = [];
-  this.limit = 4;
-
-  this.currentPage = $routeParams.pageId || 1;
-  this.prevPage = parseInt(this.currentPage, 10) - 1 || 1;
-  this.nextPage = parseInt(this.currentPage, 10) + 1;
-
-  this.offset = (this.currentPage - 1) * this.limit || 0;
-  this.items = [];
+  this.pagination = {
+    currentPage: $routeParams.pageId,
+    itemsPerPage: 4,
+    totalItems: 0
+  };
 
   LegoNews.view(this.limit, this.offset).success(function (data) {
-    this.total_pages = Array(Math.ceil(data.total_rows / this.limit));
-    this.nextPage = this.total_pages.length < this.nextPage ? this.total_pages.length : this.nextPage;
+    this.pagination.totalItems = data.total_rows;
 
     this.items = data.rows.map(function (data) {
       var item = data.doc;
@@ -181,7 +201,7 @@ var NewsCtrl = function (LegoNews, $routeParams) {
 
       return item;
     });
-  }.bind(this));
+  });
 }
 
 var PhotoCtrl = function (LegoNews, $routeParams, $location) {

@@ -39,13 +39,16 @@
       </div>
       <div class="footer row">
         <div class="col-md-12">
-          <ul class="pagination">
-            <li ng-class="{ 'disabled': news.currentPage == 1 }"><a ng-href="#/page/{{ news.prevPage }}">&laquo;</a></li>
-            <li ng-repeat="a in news.total_pages track by $index" ng-class="{ 'active': news.currentPage == $index + 1}"><a href="#/page/{{$index + 1}}">{{$index + 1}}</a></li>
-            <li ng-class="{ 'disabled': news.nextPage == news.currentPage }"><a ng-href="#/page/{{ news.nextPage }}">&raquo;</a></li>
-          </ul>
+          <ul ng-pagination current-page="{{news.pagination.currentPage}}" items-per-page="{{news.pagination.itemsPerPage}}"  total-items="{{news.pagination.totalItems}}"></ul>
         </div>
       </div>
+    </script>
+    <script type="text/ng-template" id="pagination.html">
+      <ul class="pagination">
+        <li ng-class="{ 'disabled': news.currentPage == 1 }"><a ng-href="#/page/{{ news.prevPage }}">&laquo;</a></li>
+        <li ng-repeat="item in news.total_pages track by $index" ng-class="{ 'active': news.currentPage == $index + 1}"><a href="#/page/{{$index + 1}}">{{$index + 1}}</a></li>
+        <li ng-class="{ 'disabled': news.nextPage == news.currentPage }"><a ng-href="#/page/{{ news.nextPage }}">&raquo;</a></li>
+      </ul>
     </script>
     <script type="text/ng-template" id="photo.html">
       <div class="col-md-12">
