@@ -164,7 +164,7 @@ var NewsCtrl = function (LegoNews, $routeParams) {
 
   LegoNews.view(this.pagination.itemsPerPage, this.pagination.offset())
   .success(function (data) {
-    self.pagination.setTotal(data.total_rows);
+    self.pagination.totalItems = data.total_rows;
 
     self.items = data.rows.map(function (data) {
       var item = data.doc;
@@ -430,10 +430,6 @@ var Pagination = function (currentPage, itemsPerPage, totalItems) {
   this.currentPage = parseInt(currentPage, 10) || 1;
   this.itemsPerPage = itemsPerPage;
   this.totalItems = totalItems;
-}
-
-Pagination.prototype.setTotal = function (total) {
-  this.totalItems = total;
 }
 
 Pagination.prototype.offset = function () {
