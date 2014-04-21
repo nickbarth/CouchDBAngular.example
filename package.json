@@ -4,11 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "couchapp": "couchapp push couch_update.js http://admin:admin@localhost:5984/lego-news"
   },
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "request": "^2.34.0"
+    "couchapp": "^0.11.0"
   }
 }
