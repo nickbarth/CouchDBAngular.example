@@ -157,42 +157,16 @@ UserCtrl.prototype.currentUser = function () {
   return this.User.get();
 }
 
-var Pagination = function (currentPage, itemsPerPage, totalItems) {
-  this.currentPage = parseInt(currentPage, 10) || 1;
-  this.itemsPerPage = itemsPerPage;
-  this.totalItems = totalItems;
-}
-
-Pagination.prototype.offset = function () {
-  return (this.currentPage - 1) * this.itemsPerPage || 0;
-}
-
-Pagination.prototype.totalPages = function () {
-  return Math.ceil(this.totalItems / this.itemsPerPage);
-}
-
-Pagination.prototype.prevPage = function () {
-  return this.currentPage - 1 || 1;
-}
-
-Pagination.prototype.nextPage = function () {
-  return this.totalPages() === this.currentPage ? this.currentPage : this.currentPage + 1;
-}
-
 var NewsCtrl = function (LegoNews, $routeParams) {
   var self = this;
 
-  this.name = 'test';
-  this.pagination = {
-    currentPage: $routeParams.pageId,
-    itemsPerPage: 4,
-    totalItems: 0
-  };
+  this.pagination = new Pagination($routeParams.pageId, 4, 0);
 
-  LegoNews.view(this.limit, this.offset).success(function (data) {
-    this.pagination.totalItems = data.total_rows;
+  LegoNews.view(this.pagination.itemsPerPage, this.pagination.offset())
+  .success(function (data) {
+    self.pagination.setTotal(data.total_rows);
 
-    this.items = data.rows.map(function (data) {
+    self.items = data.rows.map(function (data) {
       var item = data.doc;
 
       if (item._attachments) item.photos = Object.keys(item._attachments).map(function (attachment) {
@@ -200,8 +174,8 @@ var NewsCtrl = function (LegoNews, $routeParams) {
       })
 
       return item;
-    });
-  });
+    })
+  })
 }
 
 var PhotoCtrl = function (LegoNews, $routeParams, $location) {
@@ -433,7 +407,7 @@ AccountCtrl.prototype.submit = function (username, password) {
 
 // Directives
 
-var FileChange = function() {
+var FileChange = function () {
   return {
     restrict: 'A',
     link: function (scope, element, attrs) {
@@ -444,10 +418,49 @@ var FileChange = function() {
   }
 }
 
+var Paginate = function () {
+  return {
+    restrict: 'E',
+    scope: { pagination: '=' },
+    templateUrl: 'pagination.html'
+  }
+}
+
+var Pagination = function (currentPage, itemsPerPage, totalItems) {
+  this.currentPage = parseInt(currentPage, 10) || 1;
+  this.itemsPerPage = itemsPerPage;
+  this.totalItems = totalItems;
+}
+
+Pagination.prototype.setTotal = function (total) {
+  this.totalItems = total;
+}
+
+Pagination.prototype.offset = function () {
+  return (this.currentPage - 1) * this.itemsPerPage || 0;
+}
+
+Pagination.prototype.totalPages = function () {
+  return Math.ceil(this.totalItems / this.itemsPerPage);
+}
+
+Pagination.prototype.totalPagesArray = function () {
+  return Array(this.totalPages())
+}
+
+Pagination.prototype.prevPage = function () {
+  return this.currentPage - 1 || 1;
+}
+
+Pagination.prototype.nextPage = function () {
+  return this.totalPages() === this.currentPage ? this.currentPage : this.currentPage + 1;
+}
+
 angular.module('App', ['ngRoute', 'ngResource', 'firebase'])
   .constant('FIREBASE_URL', 'https://legonews.firebaseio.com')
   .config(['$routeProvider', Routes])
   .directive('fileChange', FileChange)
+  .directive('paginate', Paginate)
   .factory('User', ['$http', User])
   .factory('LegoNews', ['$http', LegoNews])
   .controller('UserCtrl', ['User', UserCtrl])
