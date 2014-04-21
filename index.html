@@ -45,9 +45,9 @@
     </script>
     <script type="text/ng-template" id="pagination.html">
       <ul class="pagination">
-        <li ng-class="{ 'disabled': pagination.currentPage == 1 }"><a ng-href="#/page/{{ pagination.prevPage() }}">&laquo;</a></li>
-        <li ng-repeat="item in pagination.totalPagesArray() track by $index" ng-class="{ 'active': pagination.currentPage == $index + 1}"><a href="#/page/{{$index + 1}}">{{$index + 1}}</a></li>
-        <li ng-class="{ 'disabled': pagination.currentPage == pagination.nextPage() }"><a ng-href="#/page/{{ pagination.nextPage() }}">&raquo;</a></li>
+        <li ng-class="{ 'disabled': pagination.hidePrev() }"><a ng-href="#/page/{{ pagination.prevPage() }}">&laquo;</a></li>
+        <li ng-repeat="item in pagination.totalPagesArray() track by $index" ng-class="{ 'active': pagination.isCurrentPage($index + 1) }"><a href="#/page/{{$index + 1}}">{{$index + 1}}</a></li>
+        <li ng-class="{ 'disabled': pagination.hideNext() }"><a ng-href="#/page/{{ pagination.nextPage() }}">&raquo;</a></li>
       </ul>
     </script>
     <script type="text/ng-template" id="photo.html">

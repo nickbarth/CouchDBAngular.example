@@ -432,6 +432,18 @@ var Pagination = function (currentPage, itemsPerPage, totalItems) {
   this.totalItems = totalItems;
 }
 
+Pagination.prototype.isCurrentPage = function (page) {
+  return this.currentPage === page;
+}
+
+Pagination.prototype.hidePrev = function () {
+  return this.currentPage === 1;
+}
+
+Pagination.prototype.hideNext = function () {
+  return this.currentPage === this.nextPage();
+}
+
 Pagination.prototype.offset = function () {
   return (this.currentPage - 1) * this.itemsPerPage || 0;
 }
