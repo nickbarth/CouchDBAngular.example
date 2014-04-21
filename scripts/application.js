@@ -456,7 +456,7 @@ Pagination.prototype.nextPage = function () {
   return this.totalPages() === this.currentPage ? this.currentPage : this.currentPage + 1;
 }
 
-angular.module('App', ['ngRoute', 'ngResource', 'firebase'])
+angular.module('App', ['ngRoute'])
   .constant('FIREBASE_URL', 'https://legonews.firebaseio.com')
   .config(['$routeProvider', Routes])
   .directive('fileChange', FileChange)
