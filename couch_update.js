@@ -10,9 +10,8 @@ ddoc = {
 ddoc.views.all_news = {
   map: function (doc) {
     if (doc.type !== 'Photo') return;
-    emit(doc.id, doc);
-  },
-  reduce: '_count'
+    emit(doc.id, null);
+  }
 }
 
 ddoc.validate_doc_update = function (newDoc, oldDoc, userCtx) {

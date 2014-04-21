@@ -170,7 +170,7 @@ var NewsCtrl = function (LegoNews, $routeParams) {
       var item = data.doc;
 
       if (item._attachments) item.photos = Object.keys(item._attachments).map(function (attachment) {
-        return '//localhost:5984/lego-news/' + data.value._id + '/' + attachment
+        return '//localhost:5984/lego-news/' + item._id + '/' + attachment
       })
 
       return item;
